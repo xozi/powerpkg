@@ -304,9 +304,9 @@ PowerMatrix<T> matrix_solver(PowerMatrix<T> power) {
     // Identity Matrix
     CudaTempMemory<cuFloatComplex> u(power.PHASE * power.PHASE * sizeof(cuFloatComplex));
     cuFloatComplex h_u[power.PHASE * power.PHASE] = {
-        make_cuFloatComplex(1, 0),  make_cuFloatComplex(0, 0),  make_cuFloatComplex(0, 0),
-        make_cuFloatComplex(0, 0),  make_cuFloatComplex(1, 0),  make_cuFloatComplex(0, 0),
-        make_cuFloatComplex(0, 0),  make_cuFloatComplex(0, 0),  make_cuFloatComplex(1, 0)
+        make_cuFloatComplex(1.0f, 0.0f), make_cuFloatComplex(0.0f, 0.0f), make_cuFloatComplex(0.0f, 0.0f),
+        make_cuFloatComplex(0.0f, 0.0f), make_cuFloatComplex(1.0f, 0.0f), make_cuFloatComplex(0.0f, 0.0f),
+        make_cuFloatComplex(0.0f, 0.0f), make_cuFloatComplex(0.0f, 0.0f), make_cuFloatComplex(1.0f, 0.0f)
     };
     CUDA_CHECK(cudaMemcpy(u.get(), h_u, power.PHASE * power.PHASE * sizeof(cuFloatComplex), cudaMemcpyHostToDevice));
 

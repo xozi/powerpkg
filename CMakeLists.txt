@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.18)
 project(powerpkg CUDA CXX)
 
-set(CMAKE_CUDA_COMPILER /opt/cuda/bin/nvcc)
+set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_ARCHITECTURES 86)  # RTX 3090 uses Ampere architecture (compute capability 8.6)
 
 
 # Add include directories
