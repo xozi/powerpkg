@@ -326,7 +326,7 @@ PowerMatrix<T> matrix_solver(PowerMatrix<T> power) {
     cublasCgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N, 
         gpu_m.PHASE, gpu_m.PHASE, 
         &beta, 
-        u, 
+        u.get(), 
         gpu_m.PHASE, 
         &beta, 
         gpu_m.a, 
