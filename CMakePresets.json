@@ -9,12 +9,12 @@
             "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CUDA_COMPILER": "/usr/local/cuda/bin/nvcc",
+                "CMAKE_CUDA_COMPILER": "/opt/cuda/bin/nvcc",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_CXX_COMPILER": "/usr/bin/g++-13.3",
-                "CMAKE_CUDA_ARCHITECTURES": "86",
-                "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/gcc-13.3",
-                "CMAKE_CUDA_FLAGS": "-ccbin /usr/bin/gcc-13.3 --allow-unsupported-compiler"
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++-13",
+                "CMAKE_CUDA_ARCHITECTURES": "75",
+                "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/gcc-13",
+                "CMAKE_CUDA_FLAGS": "-ccbin /usr/bin/gcc-13 --allow-unsupported-compiler"
             }
         }
     ],

@@ -3,7 +3,7 @@
 
 #include "power_abc.cuh"
 
-PowerMatrix<cuFloatComplex> ex1_unit_test() {
+PowerLineMatrix<cuFloatComplex> ex1_unit_test() {
     // Scaling factor (line length in miles)
     const float scale = 10000.0f/5280.0f;
 
@@ -27,12 +27,18 @@ PowerMatrix<cuFloatComplex> ex1_unit_test() {
     const float PF = 0.9f;  
 
    //Voltage and Current Setup
-    PowerMatrix<cuFloatComplex> init = vizy(RATED_VOLTAGE, VA, PF, Z_abc, Y_abc);
+    PowerLineMatrix<cuFloatComplex> power = vizy(RATED_VOLTAGE, VA, PF, Z_abc, Y_abc);
 
-    // Solve for values
-    PowerMatrix<cuFloatComplex> result = matrix_solver(init);
-    
-    return result;
+    //Allocate to GPU 
+    GPUPowerLineMatrix<cuFloatComplex> line1(power);
+    BlockInit init(2, false);
+    {
+        line_matrix_op(line1);
+        voltage_metrics<<<init.grid, init.block>>>(line1.d_this);
+        power_loss<<<init.grid, init.block>>>(line1.d_this); 
+    }
+    line1.copyToHost(power);
+    return power;
 }
 
 #endif 
