@@ -2,11 +2,11 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "default",
-            "displayName": "Default Config",
-            "description": "Default build using CUDA",
+            "name": "local",
+            "displayName": "Local Config",
+            "description": "Build for local machine",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build",
+            "binaryDir": "${sourceDir}/build/local",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_CUDA_COMPILER": "/opt/cuda/bin/nvcc",
@@ -14,14 +14,34 @@
                 "CMAKE_CXX_COMPILER": "/usr/bin/g++-13",
                 "CMAKE_CUDA_ARCHITECTURES": "75",
                 "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/gcc-13",
-                "CMAKE_CUDA_FLAGS": "-ccbin /usr/bin/gcc-13 --allow-unsupported-compiler"
+                "CMAKE_CUDA_FLAGS": "-ccbin /usr/bin/gcc-13"
+            }
+        },
+        {
+            "name": "colab",
+            "displayName": "Colab Config",
+            "description": "Build for Google Colab, T4 GPU",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/colab",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CUDA_COMPILER": "/usr/local/cuda/bin/nvcc", 
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++",
+                "CMAKE_CUDA_ARCHITECTURES": "75", 
+                "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/gcc",
+                "CMAKE_CUDA_FLAGS": "-ccbin /usr/bin/gcc --allow-unsupported-compiler"
             }
         }
     ],
     "buildPresets": [
         {
-            "name": "default",
-            "configurePreset": "default"
+            "name": "local",
+            "configurePreset": "local"
+        },
+        {
+            "name": "colab",
+            "configurePreset": "colab"
         }
     ]
 }
