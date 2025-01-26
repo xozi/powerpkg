@@ -5,7 +5,7 @@
             "name": "local",
             "displayName": "Local Config",
             "description": "Build for local machine",
-            "generator": "Ninja",
+            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/local",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -21,7 +21,7 @@
             "name": "colab",
             "displayName": "Colab Config",
             "description": "Build for Google Colab, T4 GPU",
-            "generator": "Ninja",
+            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build/colab",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
