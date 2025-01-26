@@ -1,6 +1,8 @@
 ## powerpkg
 
-This is solver for power distrubution models currently using CUDA cuBLAS to preform matrix operations.
-There is plenty of work to made in terms of optimization, I'm currently not utilizing kernals and merely the matrix operations, so solving is not optimized yet. Optimizations will be made later. 
+This is solver for power distrubution models using CUDA kernels for parralize calculations.
+There isn't any proper optimizations as I'm just getting functions to work with CUDA for powerflow, with some written kernels to speed up the calculations (they're not hard to begin with). The ideal utilization of this is parallelize the configuration of line/xfer/load at the same time, then preform quick forward/back flow calculations. 
 
-In [releases](https://github.com/xozi/powerpkg/releases/tag/homework) you can find the binaries for sets of homework problems. They require CUDA installed to operate, pure C++ implementation does not exist currently, but is possible. The only limitation to this is complex value types from cuComplex are currently being used for all complex operations and cuBLAS is handling all matrix operations. Both of these will have to be rewritten with native C++ complaint code, which C++ does have complex operations in `complex.h`.
+I'm merely writing examples of solving singular problems until I can do that.This obviously requires CUDA installed to operate, pure C++ implementation does not exist currently.
+
+I have a notebook that I generated to run the tests, feel free to use it as a demo.
