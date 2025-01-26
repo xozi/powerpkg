@@ -18,31 +18,6 @@
     } \
 }
 
-// Simple RAII wrapper for CUDA memory
-template<typename T>
-class CUDATempMemory {
-public:
-    // Host constructor - uses cudaMalloc
-    __host__ CUDATempMemory(size_t size) {
-        CUDA_CHECK(cudaMalloc(&ptr_, size));
-    }
-
-    // Host destructor - uses cudaFree
-    __host__ ~CUDATempMemory() {
-        if (ptr_) {
-            cudaFree(ptr_);
-        }
-    }
-
-    // General accessor
-    __host__ __device__ T* get() {
-        return ptr_;
-    }
-
-private:
-    T* ptr_ = nullptr;
-};
-
 template<typename T>
 struct PowerLineMatrix {
     static const int phase = 3;
@@ -65,17 +40,49 @@ struct PowerLineMatrix {
     //Voltage Unbalance Percentage
     float V_unb_perc;
     //Voltage Drop Percentage per Phase
-    //Voltage Drop Percentage per Phase
-    //Complex Power per Phase at Source
     float phase_vdrop_perc[3];
-    //Complex Power per Phase at Load (S = V * I*)
     //Complex Power per Phase at Source
-    //Complex Power per Phase at Loss (S_loss = S_S - S_R)
     T S_source[3];
     //Complex Power per Phase at Load (S = V * I*)
     T S_load[3];
     //Complex Power per Phase at Loss (S_loss = S_S - S_R)
     T S_loss[3];
+    //Neutral Transformation Matrix
+    T t_n[3];
+
+        // Constructor to initialize everything to zero
+    PowerLineMatrix() {
+        // Initialize complex arrays to zero
+        cuFloatComplex zero_complex = make_cuFloatComplex(0.0f, 0.0f);
+        
+        // Initialize 3x3 matrices
+        for(int i = 0; i < 9; i++) {
+            u[i] = zero_complex;
+            Z_abc[i] = zero_complex;
+            Y_abc[i] = zero_complex;
+            a[i] = zero_complex;
+            A[i] = zero_complex;
+            B[i] = zero_complex;
+        }
+        
+        // Initialize 3-element arrays
+        for(int i = 0; i < 3; i++) {
+            I_R[i] = zero_complex;
+            I_S[i] = zero_complex;
+            V_S_LN[i] = zero_complex;
+            V_R_LN[i] = zero_complex;
+            V_R_LL[i] = zero_complex;
+            V_S_LL[i] = zero_complex;
+            S_source[i] = zero_complex;
+            S_load[i] = zero_complex;
+            S_loss[i] = zero_complex;
+            t_n[i] = zero_complex;
+            phase_vdrop_perc[i] = 0.0f;
+        }
+        
+        // Initialize float values
+        V_unb_perc = 0.0f;
+    }
 };
 
 template<typename T>
@@ -115,8 +122,6 @@ struct GPUPowerLineMatrix {
 
     // Constructor - allocates and copies from host PowerLineMatrix
     GPUPowerLineMatrix(const PowerLineMatrix<T>& power) {
-        cudaDeviceSynchronize();
-        CUDA_CHECK(cudaGetLastError());
         // Allocate device pointer for this struct
         CUDA_CHECK(cudaMalloc(&d_this, sizeof(GPUPowerLineMatrix)));
 
@@ -176,13 +181,10 @@ struct GPUPowerLineMatrix {
         // Copy this struct to device
         CUDA_CHECK(cudaMemcpy(d_this, this, sizeof(GPUPowerLineMatrix), cudaMemcpyHostToDevice));
         cudaDeviceSynchronize();
-        CUDA_CHECK(cudaGetLastError());
     }
 
     // Copy results back to host
     void copyToHost(PowerLineMatrix<T>& power) {
-        cudaDeviceSynchronize();
-        CUDA_CHECK(cudaGetLastError());
         CUDA_CHECK(cudaMemcpy(power.a, d_a, 9 * sizeof(T), cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(power.A, d_A, 9 * sizeof(T), cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(power.B, d_B, 9 * sizeof(T), cudaMemcpyDeviceToHost));
@@ -195,38 +197,36 @@ struct GPUPowerLineMatrix {
         CUDA_CHECK(cudaMemcpy(power.S_load, d_S_load, 3 * sizeof(T), cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(power.S_loss, d_S_loss, 3 * sizeof(T), cudaMemcpyDeviceToHost));
         cudaDeviceSynchronize();
-        CUDA_CHECK(cudaGetLastError());
     }
 
     // Destructor - handles cleanup
     ~GPUPowerLineMatrix() {
-        cudaFree(d_u);
-        cudaFree(d_Z_abc);
-        cudaFree(d_Y_abc);
-        cudaFree(d_a);
-        cudaFree(d_A);
-        cudaFree(d_B);
-        cudaFree(d_I_R);
-        cudaFree(d_I_S);
-        cudaFree(d_V_S_LN);
-        cudaFree(d_V_R_LN);
-        cudaFree(d_V_R_LL);
-        cudaFree(d_V_S_LL);
-        cudaFree(d_voltage_average);
-        cudaFree(d_V_unb_perc);
-        cudaFree(d_phase_vdrop_perc);
-        cudaFree(d_S_source);
-        cudaFree(d_S_load);
-        cudaFree(d_S_loss);
-        cudaFree(d_Aarray);
-        cudaFree(d_Carray);
-        cudaFree(d_pivot);
-        cudaFree(d_info);
-        cudaFree(d_temp1);
-        cudaFree(d_temp2);
-        cudaFree(d_this);
+        if (d_u) cudaFree(d_u);
+        if (d_Z_abc) cudaFree(d_Z_abc);
+        if (d_Y_abc) cudaFree(d_Y_abc);
+        if (d_a) cudaFree(d_a);
+        if (d_A) cudaFree(d_A);
+        if (d_B) cudaFree(d_B);
+        if (d_I_R) cudaFree(d_I_R);
+        if (d_I_S) cudaFree(d_I_S);
+        if (d_V_S_LN) cudaFree(d_V_S_LN);
+        if (d_V_R_LN) cudaFree(d_V_R_LN);
+        if (d_V_R_LL) cudaFree(d_V_R_LL);
+        if (d_V_S_LL) cudaFree(d_V_S_LL);
+        if (d_voltage_average) cudaFree(d_voltage_average);
+        if (d_V_unb_perc) cudaFree(d_V_unb_perc);
+        if (d_phase_vdrop_perc) cudaFree(d_phase_vdrop_perc);
+        if (d_S_source) cudaFree(d_S_source);
+        if (d_S_load) cudaFree(d_S_load);
+        if (d_S_loss) cudaFree(d_S_loss);
+        if (d_Aarray) cudaFree(d_Aarray);
+        if (d_Carray) cudaFree(d_Carray);
+        if (d_pivot) cudaFree(d_pivot);
+        if (d_info) cudaFree(d_info);
+        if (d_temp1) cudaFree(d_temp1);
+        if (d_temp2) cudaFree(d_temp2);
+        if (d_this) cudaFree(d_this);
         cudaDeviceSynchronize();
-        CUDA_CHECK(cudaGetLastError());
     }
 };
 
@@ -236,8 +236,8 @@ PowerLineMatrix<T> vizy(float rated_voltage,
                    float VA, 
                    float PF, 
                    T* Z_abc, 
-                   T* Y_abc) {
-    PowerLineMatrix<T> power;
+                   T* Y_abc,
+                   PowerLineMatrix<T>& power) {
     //Load V_LN calculation and Load Current
     const float voltage = (rated_voltage)/cuda::std::sqrtf(3.0f);
     const float current = VA / (cuda::std::sqrtf(3.0f) * rated_voltage);

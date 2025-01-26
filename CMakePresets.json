@@ -5,7 +5,7 @@
             "name": "local",
             "displayName": "Local Config",
             "description": "Build for local machine",
-            "generator": "Unix Makefiles",
+            "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/local",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",

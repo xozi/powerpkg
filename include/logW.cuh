@@ -76,12 +76,26 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
         fprintf(fp, "%s", get_phasor_string("V_S_LL", i, result.V_S_LL[i], result.PI_F).c_str());
     }
 
-    fprintf(fp, "\nVoltage Unbalance Percentage: %f%%\n", result.V_unb_perc);
+    fprintf(fp, "\nVoltage Unbalance Percentage:\n %f%%\n", result.V_unb_perc);
 
-    fprintf(fp, "\nVoltage Drop Percentage per Phase: %f%%, %f%%, %f%%\n", 
+    fprintf(fp, "\nVoltage Drop Percentage per Phase:\n %f%%\n %f%%\n %f%%\n", 
            result.phase_vdrop_perc[0], 
            result.phase_vdrop_perc[1], 
            result.phase_vdrop_perc[2]);
+
+    fprintf(fp, "\n[t_n]:\n");
+    for (int i = 0; i < result.phase; i++) {
+        fprintf(fp, "%f + %fi\t\n", cuCrealf(result.t_n[i]), cuCimagf(result.t_n[i]));
+    }
+
+    fprintf(fp, "\n[Z_abc]:\n");
+    for (int i = 0; i < result.phase; i++) {
+        for (int j = 0; j < result.phase; j++) {
+            fprintf(fp, "%f + %fi\t", cuCrealf(result.Z_abc[i * result.phase + j]), 
+                                    cuCimagf(result.Z_abc[i * result.phase + j]));
+        }
+        fprintf(fp, "\n");
+    }
 
     fprintf(fp, "\n[a]:\n");
     for (int i = 0; i < result.phase; i++) {

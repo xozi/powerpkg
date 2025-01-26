@@ -2,26 +2,29 @@
 #include "power_abc.cuh"
 #include "ex1.cuh"
 #include "hw1.cuh"
+#include "ex2.cuh"
 #include <cstring>
 
 int main(int argc, char* argv[]) {
-    // Check for specific command line arguments
     if (argc < 2) {
         printf("Usage: %s <test_type>\n", argv[0]);
-        return 1; // Exit with error if no arguments are provided
+        return 1; 
     }
 
     PowerLineMatrix<cuFloatComplex> result;
 
     // Determine which test to run based on the argument
     if (strcmp(argv[1], "ex1") == 0) {
-        // Test Example 1 (from ex1.cuh)
+        // Example 1 is calculation of backwardsweep of power flow
         result = ex1_unit_test();
     } else if (strcmp(argv[1], "hw1") == 0) {
-        // Test Homework 1 (from hw1.cuh)
+        // Homework 1 is calculation of backward sweep, similar to Example 1
         result = hw1_unit_test(); 
+    } else if (strcmp(argv[1], "ex2") == 0) {
+        // Example 2 is calculation of Z_abc, Y_abc, t_n from line parameters
+        result = ex2_unit_test(); 
     } else {
-        printf("Error: Unknown test type '%s'. Use 'ex1' or 'hw1'.\n", argv[1]);
+        printf("Error: Unknown test type '%s'...", argv[1]);
         return 1; 
     }
 

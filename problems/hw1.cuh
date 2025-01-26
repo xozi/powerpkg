@@ -5,6 +5,7 @@
 
 
 PowerLineMatrix<cuFloatComplex> hw1_unit_test() {
+    PowerLineMatrix<cuFloatComplex> power;
     //Scale (line length in miles)
     const float scale = 2.0f;
 
@@ -28,7 +29,7 @@ PowerLineMatrix<cuFloatComplex> hw1_unit_test() {
     const float PF = 0.85f;
 
    //Voltage and Current Setup
-    PowerLineMatrix<cuFloatComplex> power = vizy(RATED_VOLTAGE, VA, PF, Z_abc, Y_abc);
+   vizy(RATED_VOLTAGE, VA, PF, Z_abc, Y_abc, power);
 
     //Allocate to GPU
     GPUPowerLineMatrix<cuFloatComplex> line1(power);
