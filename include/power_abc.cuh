@@ -53,7 +53,7 @@ struct PowerLineMatrix {
         // Constructor to initialize everything to zero
     PowerLineMatrix() {
         // Initialize complex arrays to zero
-        cuFloatComplex zero_complex = make_cuFloatComplex(0.0f, 0.0f);
+        cuDoubleComplex zero_complex = make_cuDoubleComplex(0.0f, 0.0f);
         
         // Initialize 3x3 matrices
         for(int i = 0; i < 9; i++) {
@@ -89,10 +89,10 @@ template<typename T>
 struct GPUPowerLineMatrix {
     static const int phase = 3;
     static constexpr float PI_F = 3.14159265358979323846f;
-    const T alpha_one = make_cuFloatComplex(1.0f, 0.0f);
-    const T alpha_half = make_cuFloatComplex(0.5f, 0.0f);
-    const T beta_zero = make_cuFloatComplex(0.0f, 0.0f);
-    const T beta_one = make_cuFloatComplex(1.0f, 0.0f);
+    const T alpha_one = make_cuDoubleComplex(1.0f, 0.0f);
+    const T alpha_half = make_cuDoubleComplex(0.5f, 0.0f);
+    const T beta_zero = make_cuDoubleComplex(0.0f, 0.0f);
+    const T beta_one = make_cuDoubleComplex(1.0f, 0.0f);
     //Pointers to GPU Memory
     T* d_u;
     T* d_Z_abc;
@@ -261,74 +261,74 @@ PowerLineMatrix<T> vizy(float rated_voltage,
 
     //Combined Magnitude and Angle for V_R_LN, V_R_LL, and I_R
     for(int i = 0; i < power.phase; i++) {
-        power.V_R_LN[i] = make_cuFloatComplex(
+        power.V_R_LN[i] = make_cuDoubleComplex(
             voltage * cosf(v_angles[i] * deg_to_rad),
             voltage * sinf(v_angles[i] * deg_to_rad)
         );
 
-        power.V_R_LL[i] = make_cuFloatComplex(
+        power.V_R_LL[i] = make_cuDoubleComplex(
             rated_voltage * cosf(LL_angles[i] * deg_to_rad),
             rated_voltage * sinf(LL_angles[i] * deg_to_rad)
         );
 
-        power.I_R[i] = make_cuFloatComplex(
+        power.I_R[i] = make_cuDoubleComplex(
             current * cosf(i_angles[i] * deg_to_rad),
             current * sinf(i_angles[i] * deg_to_rad)
         );
     }
 
     if (power.phase == 3) {
-        power.u[0] = make_cuFloatComplex(1.0f, 0.0f); power.u[1] = make_cuFloatComplex(0.0f, 0.0f); power.u[2] = make_cuFloatComplex(0.0f, 0.0f);
-        power.u[3] = make_cuFloatComplex(0.0f, 0.0f); power.u[4] = make_cuFloatComplex(1.0f, 0.0f); power.u[5] = make_cuFloatComplex(0.0f, 0.0f);
-        power.u[6] = make_cuFloatComplex(0.0f, 0.0f); power.u[7] = make_cuFloatComplex(0.0f, 0.0f); power.u[8] = make_cuFloatComplex(1.0f, 0.0f);
+        power.u[0] = make_cuDoubleComplex(1.0f, 0.0f); power.u[1] = make_cuDoubleComplex(0.0f, 0.0f); power.u[2] = make_cuDoubleComplex(0.0f, 0.0f);
+        power.u[3] = make_cuDoubleComplex(0.0f, 0.0f); power.u[4] = make_cuDoubleComplex(1.0f, 0.0f); power.u[5] = make_cuDoubleComplex(0.0f, 0.0f);
+        power.u[6] = make_cuDoubleComplex(0.0f, 0.0f); power.u[7] = make_cuDoubleComplex(0.0f, 0.0f); power.u[8] = make_cuDoubleComplex(1.0f, 0.0f);
     }
     //Copy Impedance and Admittance Matrices to PowerLineMatrix
-    memcpy(power.Y_abc, Y_abc, power.phase * power.phase * sizeof(cuFloatComplex));
-    memcpy(power.Z_abc, Z_abc, power.phase * power.phase * sizeof(cuFloatComplex));
+    memcpy(power.Y_abc, Y_abc, power.phase * power.phase * sizeof(cuDoubleComplex));
+    memcpy(power.Z_abc, Z_abc, power.phase * power.phase * sizeof(cuDoubleComplex));
 
     return power;
 }
 
-__global__ void voltage_metrics(GPUPowerLineMatrix<cuFloatComplex>* d_m) {
+__global__ void voltage_metrics(GPUPowerLineMatrix<cuDoubleComplex>* d_m) {
     __threadfence();
     // Calculate voltage average
     if (threadIdx.x == 0) {
         float sum = 0.0f;
         for (int i = 0; i < d_m->phase; i++) {
-            sum += cuCabsf(d_m->d_V_S_LN[i]);
+            sum += cuCabs(d_m->d_V_S_LN[i]);
         }
         *d_m->d_voltage_average = sum / d_m->phase;
-        *d_m->d_V_unb_perc = ((cuCabsf(d_m->d_V_S_LN[0]) - *d_m->d_voltage_average) / *d_m->d_voltage_average) * 100.0f;
+        *d_m->d_V_unb_perc = ((cuCabs(d_m->d_V_S_LN[0]) - *d_m->d_voltage_average) / *d_m->d_voltage_average) * 100.0f;
     }
 
     // Parallel phase calculations
     if (threadIdx.x > 0 && threadIdx.x < (d_m->phase + 1)) {
         d_m->d_phase_vdrop_perc[(threadIdx.x-1)] = 
-            ((cuCabsf(d_m->d_V_S_LN[(threadIdx.x-1)]) / cuCabsf(d_m->d_V_R_LN[(threadIdx.x-1)])) - 1.0f) * 100.0f;
+            ((cuCabs(d_m->d_V_S_LN[(threadIdx.x-1)]) / cuCabs(d_m->d_V_R_LN[(threadIdx.x-1)])) - 1.0f) * 100.0f;
     }
     __threadfence();
 }
 
-__global__ void power_loss(GPUPowerLineMatrix<cuFloatComplex>* d_m) {
+__global__ void power_loss(GPUPowerLineMatrix<cuDoubleComplex>* d_m) {
     __threadfence();
     // Parallel phase calculations
     if (threadIdx.x < d_m->phase) {
         // Calculate source power
-        cuFloatComplex I_S_conj = make_cuFloatComplex(
-            cuCrealf(d_m->d_I_S[threadIdx.x]),
-            -cuCimagf(d_m->d_I_S[threadIdx.x])
+        cuDoubleComplex I_S_conj = make_cuDoubleComplex(
+            cuCreal(d_m->d_I_S[threadIdx.x]),
+            -cuCimag(d_m->d_I_S[threadIdx.x])
         );
-        d_m->d_S_source[threadIdx.x] = cuCmulf(d_m->d_V_S_LN[threadIdx.x], I_S_conj);
+        d_m->d_S_source[threadIdx.x] = cuCmul(d_m->d_V_S_LN[threadIdx.x], I_S_conj);
         
         // Calculate load power
-        cuFloatComplex I_R_conj = make_cuFloatComplex(
-            cuCrealf(d_m->d_I_R[threadIdx.x]),
-            -cuCimagf(d_m->d_I_R[threadIdx.x])
+        cuDoubleComplex I_R_conj = make_cuDoubleComplex(
+            cuCreal(d_m->d_I_R[threadIdx.x]),
+            -cuCimag(d_m->d_I_R[threadIdx.x])
         );
-        d_m->d_S_load[threadIdx.x] = cuCmulf(d_m->d_V_R_LN[threadIdx.x], I_R_conj);
+        d_m->d_S_load[threadIdx.x] = cuCmul(d_m->d_V_R_LN[threadIdx.x], I_R_conj);
         
         // Calculate power loss
-        d_m->d_S_loss[threadIdx.x] = cuCsubf(d_m->d_S_source[threadIdx.x], d_m->d_S_load[threadIdx.x]);
+        d_m->d_S_loss[threadIdx.x] = cuCsub(d_m->d_S_source[threadIdx.x], d_m->d_S_load[threadIdx.x]);
     }
     __threadfence();
 }
@@ -361,13 +361,13 @@ struct BlockInit {
     }
 };
 
-void line_matrix_op(GPUPowerLineMatrix<cuFloatComplex>& m){
+void line_matrix_op(GPUPowerLineMatrix<cuDoubleComplex>& m){
     cublasHandle_t handle;
     cublasCreate(&handle);
 
    // Cycle 1: Calculate [a] matrix
     // Operation: a = (1/2)ZY + u
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, m.phase, m.phase,
         &m.alpha_half,
         m.d_Z_abc,
@@ -378,7 +378,7 @@ void line_matrix_op(GPUPowerLineMatrix<cuFloatComplex>& m){
         m.d_a,
         m.phase);
 
-    cublasCgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, m.phase,
         &m.beta_one,
         m.d_u,
@@ -393,65 +393,65 @@ void line_matrix_op(GPUPowerLineMatrix<cuFloatComplex>& m){
     // Operation: Matrix inversion A = a^(-1)
   
     // Regular matrix inversion instead of batch
-    cublasCgetrfBatched(handle, m.phase, m.d_Aarray, m.phase, 
+    cublasZgetrfBatched(handle, m.phase, m.d_Aarray, m.phase, 
                         m.d_pivot, m.d_info, 1);
-    cublasCgetriBatched(handle, m.phase, m.d_Aarray, m.phase,
+    cublasZgetriBatched(handle, m.phase, m.d_Aarray, m.phase,
                         m.d_pivot, m.d_Carray, m.phase, 
                         m.d_info, 1);
 
     // Operation: V_S_LN = a*V_R_LN + b*I_R
 
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1, m.phase,
         &m.alpha_one, m.d_a, m.phase,
         m.d_V_R_LN, m.phase,
         &m.beta_zero, m.d_temp1, m.phase);
 
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1, m.phase,
         &m.alpha_one, m.d_Z_abc, m.phase,
         m.d_I_R, m.phase,
         &m.beta_zero, m.d_temp2, m.phase);
 
-    cublasCgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1,
         &m.beta_one, m.d_temp1, m.phase,
         &m.beta_one, m.d_temp2, m.phase,
         m.d_V_S_LN, m.phase);
 
     // Operation: I_S = c*V_R_LN + d*I_R
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1, m.phase,
         &m.alpha_one, m.d_Y_abc, m.phase,
         m.d_V_R_LN, m.phase,
         &m.beta_zero, m.d_temp1, m.phase);
 
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1, m.phase,
         &m.alpha_one, m.d_a, m.phase,
         m.d_I_R, m.phase,
         &m.beta_zero, m.d_temp2, m.phase);
 
-    cublasCgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1,
         &m.beta_one, m.d_temp1, m.phase,
         &m.beta_one, m.d_temp2, m.phase,
         m.d_I_S, m.phase);
 
     // Operation: V_S_LL = a*V_R_LL + b*I_R
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1, m.phase,
         &m.alpha_one, m.d_a, m.phase,
         m.d_V_R_LL, m.phase,
         &m.beta_zero, m.d_temp1, m.phase);
 
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1, m.phase,
         &m.alpha_one, m.d_Z_abc, m.phase,
         m.d_I_R, m.phase,
         &m.beta_zero, m.d_temp2, m.phase);
 
-    cublasCgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgeam(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, 1,
         &m.beta_one, m.d_temp1, m.phase,
         &m.beta_one, m.d_temp2, m.phase,
@@ -460,7 +460,7 @@ void line_matrix_op(GPUPowerLineMatrix<cuFloatComplex>& m){
     // Cycle 3: Parallel computations dependent on [A]
     // Operation: B = Ab
 
-    cublasCgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
+    cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N,
         m.phase, m.phase, m.phase,
         &m.alpha_one,
         m.d_A,

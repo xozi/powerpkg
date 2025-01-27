@@ -5,16 +5,16 @@
 #include "power_abc.cuh"
 
 // Return phasor string
-std::string get_phasor_string(const char* prefix, int index, cuFloatComplex z, float PI_F) {
-    float magnitude = sqrtf(cuCrealf(z) * cuCrealf(z) + cuCimagf(z) * cuCimagf(z));
-    float angle = atan2f(cuCimagf(z), cuCrealf(z)) * 180.0f / PI_F;
+std::string get_phasor_string(const char* prefix, int index, cuDoubleComplex z, double PI_F) {
+    double magnitude = sqrt(cuCreal(z) * cuCreal(z) + cuCimag(z) * cuCimag(z));
+    double angle = atan2(cuCimag(z), cuCreal(z)) * 180.0 / PI_F;
     
     char buffer[100];
-    snprintf(buffer, sizeof(buffer), "%s[%d] = %.2f ∠ %.2f°\n", prefix, (index+1), magnitude, angle);
+    snprintf(buffer, sizeof(buffer), "%s[%d] = %.8f ∠ %.8f°\n", prefix, (index+1), magnitude, angle);
     return std::string(buffer);
 }
 
-int write_log(PowerLineMatrix<cuFloatComplex> result) {
+int write_log(PowerLineMatrix<cuDoubleComplex> result) {
     // Open file for writing results, truncate any existing content
     FILE* fp = NULL;
     #ifdef _WIN32
@@ -76,23 +76,32 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
         fprintf(fp, "%s", get_phasor_string("V_S_LL", i, result.V_S_LL[i], result.PI_F).c_str());
     }
 
-    fprintf(fp, "\nVoltage Unbalance Percentage:\n %f%%\n", result.V_unb_perc);
+    fprintf(fp, "\nVoltage Unbalance Percentage:\n %.8f%%\n", result.V_unb_perc);
 
-    fprintf(fp, "\nVoltage Drop Percentage per Phase:\n %f%%\n %f%%\n %f%%\n", 
+    fprintf(fp, "\nVoltage Drop Percentage per Phase:\n %.8f%%\n %.8f%%\n %.8f%%\n", 
            result.phase_vdrop_perc[0], 
            result.phase_vdrop_perc[1], 
            result.phase_vdrop_perc[2]);
 
     fprintf(fp, "\n[t_n]:\n");
     for (int i = 0; i < result.phase; i++) {
-        fprintf(fp, "%f + %fi\t\n", cuCrealf(result.t_n[i]), cuCimagf(result.t_n[i]));
+        fprintf(fp, "%.8f + %.8fi\t\n", cuCreal(result.t_n[i]), cuCimag(result.t_n[i]));
     }
 
     fprintf(fp, "\n[Z_abc]:\n");
     for (int i = 0; i < result.phase; i++) {
         for (int j = 0; j < result.phase; j++) {
-            fprintf(fp, "%f + %fi\t", cuCrealf(result.Z_abc[i * result.phase + j]), 
-                                    cuCimagf(result.Z_abc[i * result.phase + j]));
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.Z_abc[i * result.phase + j]), 
+                                    cuCimag(result.Z_abc[i * result.phase + j]));
+        }
+        fprintf(fp, "\n");
+    }
+
+    fprintf(fp, "\n[Y_abc]:\n");
+    for (int i = 0; i < result.phase; i++) {
+        for (int j = 0; j < result.phase; j++) {
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.Y_abc[i * result.phase + j]), 
+                                    cuCimag(result.Y_abc[i * result.phase + j]));
         }
         fprintf(fp, "\n");
     }
@@ -100,8 +109,8 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
     fprintf(fp, "\n[a]:\n");
     for (int i = 0; i < result.phase; i++) {
         for (int j = 0; j < result.phase; j++) {
-            fprintf(fp, "%f + %fi\t", cuCrealf(result.a[i * result.phase + j]), 
-                                    cuCimagf(result.a[i * result.phase + j]));
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.a[i * result.phase + j]), 
+                                    cuCimag(result.a[i * result.phase + j]));
         }
         fprintf(fp, "\n");
     }
@@ -109,8 +118,8 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
     fprintf(fp, "\n[b]:\n");
     for (int i = 0; i < result.phase; i++) {
         for (int j = 0; j < result.phase; j++) {
-            fprintf(fp, "%f + %fi\t", cuCrealf(result.Z_abc[i * result.phase + j]), 
-                                    cuCimagf(result.Z_abc[i * result.phase + j]));
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.Z_abc[i * result.phase + j]), 
+                                    cuCimag(result.Z_abc[i * result.phase + j]));
         }
         fprintf(fp, "\n");
     }
@@ -118,8 +127,8 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
     fprintf(fp, "\n[c]:\n");
     for (int i = 0; i < result.phase; i++) {
         for (int j = 0; j < result.phase; j++) {
-            fprintf(fp, "%f + %fi\t", cuCrealf(result.Y_abc[i * result.phase + j]), 
-                                    cuCimagf(result.Y_abc[i * result.phase + j]));
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.Y_abc[i * result.phase + j]), 
+                                    cuCimag(result.Y_abc[i * result.phase + j]));
         }
         fprintf(fp, "\n");
     }
@@ -127,8 +136,8 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
     fprintf(fp, "\n[d]:\n");
     for (int i = 0; i < result.phase; i++) {
         for (int j = 0; j < result.phase; j++) {
-            fprintf(fp, "%f + %fi\t", cuCrealf(result.a[i * result.phase + j]), 
-                                    cuCimagf(result.a[i * result.phase + j]));
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.a[i * result.phase + j]), 
+                                    cuCimag(result.a[i * result.phase + j]));
         }
         fprintf(fp, "\n");
     }
@@ -136,8 +145,8 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
     fprintf(fp, "\n[A]:\n");
     for (int i = 0; i < result.phase; i++) {
         for (int j = 0; j < result.phase; j++) {
-            fprintf(fp, "%f + %fi\t", cuCrealf(result.A[i * result.phase + j]), 
-                                    cuCimagf(result.A[i * result.phase + j]));
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.A[i * result.phase + j]), 
+                                    cuCimag(result.A[i * result.phase + j]));
         }
         fprintf(fp, "\n");
     }
@@ -145,8 +154,8 @@ int write_log(PowerLineMatrix<cuFloatComplex> result) {
     fprintf(fp, "\n[B]:\n");
     for (int i = 0; i < result.phase; i++) {
         for (int j = 0; j < result.phase; j++) {
-            fprintf(fp, "%f + %fi\t", cuCrealf(result.B[i * result.phase + j]), 
-                                    cuCimagf(result.B[i * result.phase + j]));
+            fprintf(fp, "%.8f + %.8fi\t", cuCreal(result.B[i * result.phase + j]), 
+                                    cuCimag(result.B[i * result.phase + j]));
         }
         fprintf(fp, "\n");
     }

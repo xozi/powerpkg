@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
         return 1; 
     }
 
-    PowerLineMatrix<cuFloatComplex> result;
+    PowerLineMatrix<cuDoubleComplex> result;
 
     // Determine which test to run based on the argument
     if (strcmp(argv[1], "ex1") == 0) {

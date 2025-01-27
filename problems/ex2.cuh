@@ -4,58 +4,72 @@
 #include "power_abc.cuh"
 #include "zysolver.cuh"
 
-PowerLineMatrix<cuFloatComplex> ex2_unit_test() {
-    PowerLineMatrix<cuFloatComplex> power;
-    float res[4] = {
-        0.3060f,  // Phase A
-        0.3060f,  // Phase B
-        0.3060f,  // Phase C
-        0.5920f   // Neutral
+PowerLineMatrix<cuDoubleComplex> ex2_unit_test() {
+    PowerLineMatrix<cuDoubleComplex> power;
+    double res[4] = {
+        0.3060,  // Phase A
+        0.3060,  // Phase B
+        0.3060,  // Phase C
+        0.5920   // Neutral
     };
 
-    float gmr[4] = {
-        0.0244f,  // Phase A GMR
-        0.0244f,  // Phase B GMR
-        0.0244f,  // Phase C GMR
-        0.0081f   // Neutral GMR
+    double gmr[4] = {
+        0.0244,  // Phase A GMR
+        0.0244,  // Phase B GMR
+        0.0244,  // Phase C GMR
+        0.0081   // Neutral GMR
     };
 
-    float x[4] = {
-        0.0f,  // Phase A
-        2.5f,  // Phase B
-        7.0f,  // Phase C
-        4.0f  // Neutral
+    double diam[4] = {
+        0.721,  // Phase A
+        0.721,  // Phase B
+        0.721,  // Phase C
+        0.563    // Neutral
     };
 
-    float y[4] = {
-        29.0f,  // Phase A
-        29.0f,  // Phase B
-        29.0f,  // Phase C
-        25.0f  // Neutral
+    double x[4] = {
+        0.0,  // Phase A
+        2.5,  // Phase B
+        7.0,  // Phase C
+        4.0   // Neutral
     };
 
-    LineParam<float> line_params = {
+    double y[4] = {
+        29.0,  // Phase A
+        29.0,  // Phase B
+        29.0,  // Phase C
+        25.0   // Neutral
+    };
+
+    LineParam<double> line_params = {
         4, //amount of conductors
         res,
         gmr,
         x,
-        y
+        y,
+        diam
     };
 
-    GPULineParam<float> gpu_line_params(line_params);
+    GPULineParam<double> gpu_line_params(line_params);
     cudaDeviceSynchronize();
 
     // Simple nxn grid for Z_prim calculation
     dim3 block_zprim(gpu_line_params.size, gpu_line_params.size); 
     dim3 grid_zprim(1, 1);  
-    calc_zprim<<<grid_zprim, block_zprim>>>(gpu_line_params.d_this);
+    calc_prim<<<grid_zprim, block_zprim>>>(gpu_line_params.d_this);
     cudaDeviceSynchronize();
 
-   
     // Simple 3x3 grid for Kron reduction
     dim3 block_kron(3, 3);  
     dim3 grid_kron(1, 1);  
     kron_reduce<<<grid_kron, block_kron>>>(gpu_line_params.d_this);
+    cudaDeviceSynchronize();
+
+    mvert(gpu_line_params.d_this);
+    // Simple 3x3 grid for Y calculation
+    dim3 block_y(3, 3);  
+    dim3 grid_y(1, 1);  
+    calc_Y<<<grid_y, block_y>>>(gpu_line_params.d_this);
     cudaDeviceSynchronize();
 
     gpu_line_params.copyToHost(power);   
