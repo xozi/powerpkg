@@ -14,23 +14,32 @@ std::string get_phasor_string(const char* prefix, int index, cuDoubleComplex z, 
     return std::string(buffer);
 }
 
-int write_log(PowerLineMatrix<cuDoubleComplex> result) {
-    // Open file for writing results, truncate any existing content
+// Clear the log file and return file pointer
+FILE* clear_log() {
     FILE* fp = NULL;
     #ifdef _WIN32
         errno_t err = fopen_s(&fp, "result.txt", "w");
         if (err != 0 || fp == NULL) {
             printf("Error creating/opening file! Error code: %d\n", err);
-            return 1;
+            return NULL;
         }
     #else
         fp = fopen("result.txt", "w");
         if (fp == NULL) {
             printf("Error creating/opening file!\n");
-            return 1;
+            return NULL;
         }
     #endif
+    return fp;
+}
+
+void write_log(PowerLineMatrix<cuDoubleComplex> result, FILE* fp, std::string title) {
+    // Open file for writing results, truncate any existing content
+    if (fp == NULL) {
+        return;
+    }
     // Print Returned Values
+    fprintf(fp, "\n%s:\n", title.c_str());
     fprintf(fp, "\nComplex Power per Phase at Source (VA):\n");
     for (int i = 0; i < result.phase; i++) {
         fprintf(fp, "%s", get_phasor_string("S_S", i, result.S_source[i], result.PI_F).c_str());
@@ -159,9 +168,6 @@ int write_log(PowerLineMatrix<cuDoubleComplex> result) {
         }
         fprintf(fp, "\n");
     }
-
-    fclose(fp);
-    return 0;
 }
 
 #endif 
