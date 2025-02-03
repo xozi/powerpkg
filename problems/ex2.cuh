@@ -5,7 +5,7 @@
 #include "zysolver.cuh"
 
 PowerLineMatrix<cuDoubleComplex> ex2_unit_test() {
-    PowerLineMatrix<cuDoubleComplex> power;
+    PowerLineMatrix<cuDoubleComplex> power(3);
     double res[4] = {
         0.3060,  // Phase A
         0.3060,  // Phase B
@@ -60,18 +60,18 @@ PowerLineMatrix<cuDoubleComplex> ex2_unit_test() {
     cudaDeviceSynchronize();
 
     // Simple 3x3 grid for Kron reduction
-    dim3 block_kron(3, 3);  
+    dim3 block_kron(gpu_line_params.index, gpu_line_params.index);  
     dim3 grid_kron(1, 1);  
     kron_reduce<<<grid_kron, block_kron>>>(gpu_line_params.d_this);
     cudaDeviceSynchronize();
+ 
+    mvert(gpu_line_params);
 
-    mvert(gpu_line_params.d_this);
     // Simple 3x3 grid for Y calculation
-    dim3 block_y(3, 3);  
+    dim3 block_y(gpu_line_params.index, gpu_line_params.index);  
     dim3 grid_y(1, 1);  
     calc_Y<<<grid_y, block_y>>>(gpu_line_params.d_this);
     cudaDeviceSynchronize();
-
     gpu_line_params.copyToHost(power);   
     return power;
 }

@@ -20,43 +20,71 @@
 
 template<typename T>
 struct PowerLineMatrix {
-    static const int phase = 3;
-    static constexpr float PI_F = 3.14159265358979323846f;
-    T u[3 * 3];
-    T Z_abc[3 * 3];
-    T Y_abc[3 * 3];
+    int phase;
+    T* u;
+    T* Z_abc;
+    T* Y_abc;
     //Resulting Matrices (c d b are generated)
-    T a[3 * 3];
-    T A[3 * 3];
-    T B[3 * 3];
+    T* a;
+    T* A;
+    T* B;
     //Currents for (Sent) and (Received)
-    T I_R[3];
-    T I_S[3];
+    T* I_R;
+    T* I_S;
     //Voltages for L-N and L-L
-    T V_S_LN[3];
-    T V_R_LN[3];
-    T V_R_LL[3];
-    T V_S_LL[3];
+    T* V_S_LN;
+    T* V_R_LN;
+    T* V_R_LL;
+    T* V_S_LL;
     //Voltage Unbalance Percentage
     float V_unb_perc;
     //Voltage Drop Percentage per Phase
-    float phase_vdrop_perc[3];
+    float* phase_vdrop_perc;
     //Complex Power per Phase at Source
-    T S_source[3];
+    T* S_source;
     //Complex Power per Phase at Load (S = V * I*)
-    T S_load[3];
+    T* S_load;
     //Complex Power per Phase at Loss (S_loss = S_S - S_R)
-    T S_loss[3];
+    T* S_loss;
     //Neutral Transformation Matrix
-    T t_n[3];
+    T* t_n;
 
-        // Constructor to initialize everything to zero
-    PowerLineMatrix() {
+    // Constructor to initialize everything to zero
+    PowerLineMatrix() : phase(0) {
+        allocateArrays();
+    }
+
+    // Constructor with phase parameter
+    explicit PowerLineMatrix(int p) : phase(p) {
+        allocateArrays();
+    }
+
+    private:
+    void allocateArrays() {
+        // Allocate memory for arrays
+        u = new T[phase * phase];
+        Z_abc = new T[phase * phase];
+        Y_abc = new T[phase * phase];
+        a = new T[phase * phase];
+        A = new T[phase * phase];
+        B = new T[phase * phase];
+        I_R = new T[phase];
+        I_S = new T[phase];
+        V_S_LN = new T[phase];
+        V_R_LN = new T[phase];
+        V_R_LL = new T[phase];
+        V_S_LL = new T[phase];
+        phase_vdrop_perc = new float[phase];
+        S_source = new T[phase];
+        S_load = new T[phase];
+        S_loss = new T[phase];
+        t_n = new T[phase];
+
         // Initialize complex arrays to zero
         cuDoubleComplex zero_complex = make_cuDoubleComplex(0.0f, 0.0f);
         
-        // Initialize 3x3 matrices
-        for(int i = 0; i < 9; i++) {
+        // Initialize phase x phase matrices
+        for(int i = 0; i < phase * phase; i++) {
             u[i] = zero_complex;
             Z_abc[i] = zero_complex;
             Y_abc[i] = zero_complex;
@@ -65,8 +93,8 @@ struct PowerLineMatrix {
             B[i] = zero_complex;
         }
         
-        // Initialize 3-element arrays
-        for(int i = 0; i < 3; i++) {
+        // Initialize phase-element arrays
+        for(int i = 0; i < phase; i++) {
             I_R[i] = zero_complex;
             I_S[i] = zero_complex;
             V_S_LN[i] = zero_complex;
@@ -87,8 +115,7 @@ struct PowerLineMatrix {
 
 template<typename T>
 struct GPUPowerLineMatrix {
-    static const int phase = 3;
-    static constexpr float PI_F = 3.14159265358979323846f;
+    int phase;
     const T alpha_one = make_cuDoubleComplex(1.0f, 0.0f);
     const T alpha_half = make_cuDoubleComplex(0.5f, 0.0f);
     const T beta_zero = make_cuDoubleComplex(0.0f, 0.0f);
@@ -126,42 +153,42 @@ struct GPUPowerLineMatrix {
         CUDA_CHECK(cudaMalloc(&d_this, sizeof(GPUPowerLineMatrix)));
 
         // Allocate and copy 3x3 matrices
-        CUDA_CHECK(cudaMalloc(&d_u, 9 * sizeof(T)));
-        CUDA_CHECK(cudaMemcpy(d_u, power.u, 9 * sizeof(T), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(&d_u, power.phase * power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMemcpy(d_u, power.u, power.phase * power.phase * sizeof(T), cudaMemcpyHostToDevice));
         
-        CUDA_CHECK(cudaMalloc(&d_Z_abc, 9 * sizeof(T)));
-        CUDA_CHECK(cudaMemcpy(d_Z_abc, power.Z_abc, 9 * sizeof(T), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(&d_Z_abc, power.phase * power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMemcpy(d_Z_abc, power.Z_abc, power.phase * power.phase * sizeof(T), cudaMemcpyHostToDevice));
         
-        CUDA_CHECK(cudaMalloc(&d_Y_abc, 9 * sizeof(T)));
-        CUDA_CHECK(cudaMemcpy(d_Y_abc, power.Y_abc, 9 * sizeof(T), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(&d_Y_abc, power.phase * power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMemcpy(d_Y_abc, power.Y_abc, power.phase * power.phase * sizeof(T), cudaMemcpyHostToDevice));
         
-        CUDA_CHECK(cudaMalloc(&d_a, 9 * sizeof(T)));
-        CUDA_CHECK(cudaMalloc(&d_A, 9 * sizeof(T)));
-        CUDA_CHECK(cudaMalloc(&d_B, 9 * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_a, power.phase * power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_A, power.phase * power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_B, power.phase * power.phase * sizeof(T)));
 
         // Allocate and copy 3-element arrays
-        CUDA_CHECK(cudaMalloc(&d_I_R, 3 * sizeof(T)));
-        CUDA_CHECK(cudaMemcpy(d_I_R, power.I_R, 3 * sizeof(T), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(&d_I_R, power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMemcpy(d_I_R, power.I_R, power.phase * sizeof(T), cudaMemcpyHostToDevice));
         
-        CUDA_CHECK(cudaMalloc(&d_I_S, 3 * sizeof(T)));
-        CUDA_CHECK(cudaMalloc(&d_V_S_LN, 3 * sizeof(T)));
-        CUDA_CHECK(cudaMalloc(&d_V_R_LN, 3 * sizeof(T)));
-        CUDA_CHECK(cudaMemcpy(d_V_R_LN, power.V_R_LN, 3 * sizeof(T), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(&d_I_S, power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_V_S_LN, power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_V_R_LN, power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMemcpy(d_V_R_LN, power.V_R_LN, power.phase * sizeof(T), cudaMemcpyHostToDevice));
         
-        CUDA_CHECK(cudaMalloc(&d_V_R_LL, 3 * sizeof(T)));
-        CUDA_CHECK(cudaMemcpy(d_V_R_LL, power.V_R_LL, 3 * sizeof(T), cudaMemcpyHostToDevice));
+        CUDA_CHECK(cudaMalloc(&d_V_R_LL, power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMemcpy(d_V_R_LL, power.V_R_LL, power.phase * sizeof(T), cudaMemcpyHostToDevice));
         
-        CUDA_CHECK(cudaMalloc(&d_V_S_LL, 3 * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_V_S_LL, power.phase * sizeof(T)));
         
         // Allocate float arrays
         CUDA_CHECK(cudaMalloc(&d_voltage_average, sizeof(float)));
         CUDA_CHECK(cudaMalloc(&d_V_unb_perc, sizeof(float)));
-        CUDA_CHECK(cudaMalloc(&d_phase_vdrop_perc, 3 * sizeof(float)));
+        CUDA_CHECK(cudaMalloc(&d_phase_vdrop_perc, power.phase * sizeof(float)));
         
         // Allocate complex power arrays
-        CUDA_CHECK(cudaMalloc(&d_S_source, 3 * sizeof(T)));
-        CUDA_CHECK(cudaMalloc(&d_S_load, 3 * sizeof(T)));
-        CUDA_CHECK(cudaMalloc(&d_S_loss, 3 * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_S_source, power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_S_load, power.phase * sizeof(T)));
+        CUDA_CHECK(cudaMalloc(&d_S_loss, power.phase * sizeof(T)));
 
         // Allocate temporary storage
         CUDA_CHECK(cudaMalloc(&d_Aarray, sizeof(T*)));
@@ -185,17 +212,17 @@ struct GPUPowerLineMatrix {
 
     // Copy results back to host
     void copyToHost(PowerLineMatrix<T>& power) {
-        CUDA_CHECK(cudaMemcpy(power.a, d_a, 9 * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.A, d_A, 9 * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.B, d_B, 9 * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.I_S, d_I_S, 3 * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.V_S_LN, d_V_S_LN, 3 * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.V_S_LL, d_V_S_LL, 3 * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.a, d_a, power.phase * power.phase * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.A, d_A, power.phase * power.phase * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.B, d_B, power.phase * power.phase * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.I_S, d_I_S, power.phase * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.V_S_LN, d_V_S_LN, power.phase * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.V_S_LL, d_V_S_LL, power.phase * sizeof(T), cudaMemcpyDeviceToHost));
         CUDA_CHECK(cudaMemcpy(&power.V_unb_perc, d_V_unb_perc, sizeof(float), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.phase_vdrop_perc, d_phase_vdrop_perc, 3 * sizeof(float), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.S_source, d_S_source, 3 * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.S_load, d_S_load, 3 * sizeof(T), cudaMemcpyDeviceToHost));
-        CUDA_CHECK(cudaMemcpy(power.S_loss, d_S_loss, 3 * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.phase_vdrop_perc, d_phase_vdrop_perc, power.phase * sizeof(float), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.S_source, d_S_source, power.phase * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.S_load, d_S_load, power.phase * sizeof(T), cudaMemcpyDeviceToHost));
+        CUDA_CHECK(cudaMemcpy(power.S_loss, d_S_loss, power.phase * sizeof(T), cudaMemcpyDeviceToHost));
         cudaDeviceSynchronize();
     }
 
@@ -233,54 +260,68 @@ struct GPUPowerLineMatrix {
 // Assumes 3 Phase System
 template<typename T>
 PowerLineMatrix<T> vizy(float rated_voltage, 
-                   float VA, 
-                   float PF, 
+                   double VA, 
+                   double PF, 
                    T* Z_abc, 
                    T* Y_abc,
                    PowerLineMatrix<T>& power) {
     //Load V_LN calculation and Load Current
-    const float voltage = (rated_voltage)/cuda::std::sqrtf(3.0f);
-    const float current = VA / (cuda::std::sqrtf(3.0f) * rated_voltage);
+    const double voltage = (rated_voltage)/cuda::std::sqrtf(3.0);
+    const double current = VA / (cuda::std::sqrtf(3.0) * rated_voltage);
 
     //Load PF angle and convert to radians
-    const float PF_angle = -acosf(PF);
-    const float deg_to_rad = power.PI_F / 180.0f;
+    const double PF_angle = -acos(PF);
+    const double deg_to_rad = M_PI / 180.0;
 
     //Load V_LN angles
-    const float v_angles[power.phase] = {0.0f, -120.0f, 120.0f};
+    const double v_angles[power.phase] = {
+        0.0,                    // Phase A always present
+        (power.phase >= 2) ? -120.0 : 0.0,  // Phase B if 2 or 3 phase
+        (power.phase == 3) ? 120.0 : 0.0    // Phase C only if 3 phase
+    };
 
     //Load V_LL angles
-    const float LL_angles[power.phase] = {30.0f, -90.0f, 150.0f}; 
+    const double LL_angles[power.phase] = {
+        30.0,                   // Phase A always present
+        (power.phase >= 2) ? -90.0 : 0.0,   // Phase B if 2 or 3 phase
+        (power.phase == 3) ? 150.0 : 0.0    // Phase C only if 3 phase
+    };
 
     //Load I_R angles
-    const float i_angles[power.phase] = {
-        0.0f + (PF_angle * 180.0f/power.PI_F),  
-        -120.0f + (PF_angle * 180.0f/power.PI_F), 
-        120.0f + (PF_angle * 180.0f/power.PI_F)
+    const double i_angles[power.phase] = {
+        0.0 + (PF_angle * 180.0/M_PI),    // Phase A always present
+        (power.phase >= 2) ? -120.0 + (PF_angle * 180.0/M_PI) : 0.0,  // Phase B if 2 or 3 phase
+        (power.phase == 3) ? 120.0 + (PF_angle * 180.0/M_PI) : 0.0    // Phase C only if 3 phase
     };
 
     //Combined Magnitude and Angle for V_R_LN, V_R_LL, and I_R
     for(int i = 0; i < power.phase; i++) {
         power.V_R_LN[i] = make_cuDoubleComplex(
-            voltage * cosf(v_angles[i] * deg_to_rad),
-            voltage * sinf(v_angles[i] * deg_to_rad)
+            voltage * cos(v_angles[i] * deg_to_rad),
+            voltage * sin(v_angles[i] * deg_to_rad)
         );
 
         power.V_R_LL[i] = make_cuDoubleComplex(
-            rated_voltage * cosf(LL_angles[i] * deg_to_rad),
-            rated_voltage * sinf(LL_angles[i] * deg_to_rad)
+            rated_voltage * cos(LL_angles[i] * deg_to_rad),
+            rated_voltage * sin(LL_angles[i] * deg_to_rad)
         );
 
         power.I_R[i] = make_cuDoubleComplex(
-            current * cosf(i_angles[i] * deg_to_rad),
-            current * sinf(i_angles[i] * deg_to_rad)
+            current * cos(i_angles[i] * deg_to_rad),
+            current * sin(i_angles[i] * deg_to_rad)
         );
     }
 
-    if (power.phase == 3) {
-        power.u[0] = make_cuDoubleComplex(1.0f, 0.0f); power.u[1] = make_cuDoubleComplex(0.0f, 0.0f); power.u[2] = make_cuDoubleComplex(0.0f, 0.0f);
-        power.u[3] = make_cuDoubleComplex(0.0f, 0.0f); power.u[4] = make_cuDoubleComplex(1.0f, 0.0f); power.u[5] = make_cuDoubleComplex(0.0f, 0.0f);
-        power.u[6] = make_cuDoubleComplex(0.0f, 0.0f); power.u[7] = make_cuDoubleComplex(0.0f, 0.0f); power.u[8] = make_cuDoubleComplex(1.0f, 0.0f);
+    // Create dynamic unity matrix for any phase size
+    for(int i = 0; i < power.phase; i++) {
+        for(int j = 0; j < power.phase; j++) {
+            // Set diagonal elements to 1, others to 0
+            if(i == j) {
+                power.u[i * power.phase + j] = make_cuDoubleComplex(1.0, 0.0);
+            } else {
+                power.u[i * power.phase + j] = make_cuDoubleComplex(0.0, 0.0);
+            }
+        }
     }
     //Copy Impedance and Admittance Matrices to PowerLineMatrix
     memcpy(power.Y_abc, Y_abc, power.phase * power.phase * sizeof(cuDoubleComplex));

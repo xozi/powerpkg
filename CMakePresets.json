@@ -2,11 +2,11 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "local",
-            "displayName": "Local Config",
-            "description": "Build for local machine",
+            "name": "laptop",
+            "displayName": "Laptop Config",
+            "description": "Build for laptop",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build/local",
+            "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_CUDA_COMPILER": "/opt/cuda/bin/nvcc",
@@ -18,11 +18,27 @@
             }
         },
         {
+            "name": "PC",
+            "displayName": "PC Config",
+            "description": "Build for PC",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CUDA_COMPILER": "/usr/local/cuda/bin/nvcc",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++-13.3",
+                "CMAKE_CUDA_ARCHITECTURES": "86",
+                "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/gcc-13.3",
+                "CMAKE_CUDA_FLAGS": "-ccbin /usr/bin/gcc-13.3"
+            }
+        },
+        {
             "name": "colab",
             "displayName": "Colab Config",
             "description": "Build for Google Colab, T4 GPU",
             "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/build/colab",
+            "binaryDir": "${sourceDir}/build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_CUDA_COMPILER": "/usr/local/cuda/bin/nvcc", 
@@ -36,8 +52,12 @@
     ],
     "buildPresets": [
         {
-            "name": "local",
-            "configurePreset": "local"
+            "name": "laptop",
+            "configurePreset": "laptop"
+        },
+        {
+            "name": "PC",
+            "configurePreset": "PC"
         },
         {
             "name": "colab",

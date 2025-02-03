@@ -28,9 +28,9 @@ int main(int argc, char* argv[]) {
         write_log(result, fp, "Example 2");
     } else if (strcmp(argv[1], "hw2") == 0) {
         // Homework 2 is calculation of Z_abc, Y_abc, t_n from line parameters
-        result = hw2_unit_test(); 
+        result = hw2_unit_test_p1(); 
         write_log(result, fp, "Homework 2 Part 1");
-        result = ex2_unit_test(); 
+        result = hw2_unit_test_p2(); 
         write_log(result, fp, "Homework 2 Part 2");
     } else {
         printf("Error: Unknown test type '%s'...", argv[1]);

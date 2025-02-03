@@ -5,7 +5,7 @@
 
 
 PowerLineMatrix<cuDoubleComplex> hw1_unit_test() {
-    PowerLineMatrix<cuDoubleComplex> power;
+    PowerLineMatrix<cuDoubleComplex> power(3);
     //Scale (line length in miles)
     const double scale = 2.0;
 

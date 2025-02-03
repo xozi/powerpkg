@@ -4,7 +4,7 @@
 #include "power_abc.cuh"
 
 PowerLineMatrix<cuDoubleComplex> ex1_unit_test() {
-    PowerLineMatrix<cuDoubleComplex> power;
+    PowerLineMatrix<cuDoubleComplex> power(3);
     // Scaling factor (line length in miles)
     const double scale = 10000.0/5280.0;
 
