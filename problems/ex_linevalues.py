@@ -9,29 +9,33 @@ if __name__ == "__main__":
     line_builder.add_conductor(0.5920, 0.0081, 4.0, 25.0, 0.563)  # Neutral
     line_builder.build()
 
-    # Create the line object
-    line1 = OverheadLineObject(line_builder)
+    #Raw values from constructed line
+    print("Z matrix:")
+    print(line_builder.Z)
+    print("Y matrix:")
+    print(line_builder.Y)
+    print("tn matrix:")
+    print(line_builder.tn)
 
-    # Build the underground cable
+    # Create the line object
+    line1 = LineObject(line_builder)
+
+    #Print A, B, a,b matrices
+    print("A matrix:")
+    print(line1.A)
+    print("B matrix:")
+    print(line1.B)
+    print("a matrix:")
+    print(line1.a)
+    print("b matrix:")
+    print(line1.b)
+    '''
     cable_builder = UndergroundConcentricCableBuilder()
     cable_builder.add_phase_conductor(0.0511, 0.0081, 0.567)  # Phase A
     cable_builder.add_concentric_neutral(0.0100, 0.0081, 0.0641, 0.2835, 13)  # Neutral with 13 strands
     cable_builder.build()
 
-    # Create the cable object
     cable1 = UndergroundConcentricCableObject(cable_builder)
+    '''
 
-    # Print the matrices
-    print("Z matrix:")
-    print(line1.Z)
-    print("Y matrix:")
-    print(line1.Y)
-    print("tn matrix:")
-    print(line1.tn)
-
-    print("Z matrix:")
-    print(cable1.Z)
-    print("Y matrix:")
-    print(cable1.Y)
-    print("tn matrix:")
-    print(cable1.tn)
+ 

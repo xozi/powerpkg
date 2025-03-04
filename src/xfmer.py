@@ -1,20 +1,6 @@
 import math
 import numpy as np
 
-def xfmer_fsw(at, bt, V, I):
-    V_f = np.zeros((3,3), dtype=complex)
-    I_f = np.zeros((3,3), dtype=complex)
-    for i,j in V_f:
-        V_f[i,j] = at[i,j] * V[i,j] + bt[i,j] * I[i,j]
-    return V_f, I_f
-
-def xfmer_bksw(At, Bt, V, I):
-    V_b = np.zeros((3,3), dtype=complex)
-    I_b = np.zeros((3,3), dtype=complex)
-    for i,j in V_b:
-        V_b[i,j] = At[i,j] * V[i,j] + Bt[i,j] * I[i,j]
-    return V_b, I_b
-
 class Xfmer:
     def __init__(self, rated_power, primary_voltage, secondary_voltage):
         self.rated_power = rated_power
@@ -22,7 +8,7 @@ class Xfmer:
         self.secondary_voltage = secondary_voltage
         self.nt = primary_voltage / secondary_voltage
 
-    def add_pu_phasor(self, pu, angle):
+    def add_Zpu_phasor(self, pu, angle):
         self.Z = pu * np.exp(1j * angle) 
 
     def build(self):

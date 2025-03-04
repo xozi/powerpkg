@@ -1,5 +1,20 @@
 import numpy as np
 
+def fsw(at, bt, V, I):
+    V_f = np.zeros((3,3), dtype=complex)
+    I_f = np.zeros((3,3), dtype=complex)
+    for i,j in V_f:
+        V_f[i,j] = at[i,j] * V[i,j] + bt[i,j] * I[i,j]
+    return V_f, I_f
+
+def bksw(At, Bt, V, I):
+    V_b = np.zeros((3,3), dtype=complex)
+    I_b = np.zeros((3,3), dtype=complex)
+    for i,j in V_b:
+        V_b[i,j] = At[i,j] * V[i,j] + Bt[i,j] * I[i,j]
+    return V_b, I_b
+
+'''
 class PowerSystem:
     def __init__(self, V = None, Z = None, S = None):
         self.V = V(V) if V is not None else []  
@@ -59,3 +74,4 @@ class S:
     
     def PF_Angle(self):
         return np.radians(np.angle(self.S))
+'''
