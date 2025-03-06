@@ -13,6 +13,21 @@ Tasks:
 4. Discuss the convergence of the NR method for this simple two-bus system.
 5. Validate your results using either PowerWorld or MATPOWER.
 '''
+from src.transmission import Transmission, Node, Line
 
+transmission = Transmission(Sbase=100e6)
 
+#Add nodes
+slack = Node(type="slack")
+load = Node(type="PQ", P=-200e6/transmission.Sbase, Q=-100e6/transmission.Sbase)
 
+#Add line
+transmission.add_line(Line(Z=0.1j, fromNode=slack, toNode=load))
+transmission.add_node(slack)
+transmission.add_node(load)
+
+#Build
+transmission.build()
+
+print(transmission.voltages)
+print(transmission.angles)
