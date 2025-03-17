@@ -6,6 +6,7 @@ class OverheadLineBuilder:
     def __init__(self):
         self.conductors = []
         self.frequency = 60.0  # Default frequency in Hz
+        self.scale = 1.0
 
     def add_conductor(self, resistance, gmr, x_pos, y_pos, diameter):
         """Add a conductor to the line model"""
@@ -17,6 +18,9 @@ class OverheadLineBuilder:
             'diameter': diameter       # inches
         })
         return self
+    
+    def add_scale(self, scale):
+        self.scale = scale
 
     def build_primitive_matrices(self):
         """Build the primitive impedance and potential coefficient matrices"""
@@ -122,18 +126,26 @@ class OverheadLineBuilder:
                     -C[i, j].imag * omega,  # Conductance
                     C[i, j].real * omega    # Susceptance
                 )
-
+        
         return Z, Y, tn
 
 
-    def build(self):
+    def build(self, has_neutral=True):
         """Build the line model from the added conductors"""
         if len(self.conductors) < 2:
             raise ValueError("At least two conductors are required (phase + neutral)")
         self.size = len(self.conductors)
-        self.phase_count = len(self.conductors) - 1
-        (Z_primitive, P_primitive) = self.build_primitive_matrices()
-        (self.Z, self.Y, self.tn) = self.reduce_primitives(Z_primitive, P_primitive)
+        if has_neutral:
+            self.phase_count = len(self.conductors) - 1
+            (Z_primitive, P_primitive) = self.build_primitive_matrices()
+            Z_primitive = Z_primitive * self.scale
+            P_primitive = P_primitive * self.scale
+            (self.Z, self.Y, self.tn) = self.reduce_primitives(Z_primitive, P_primitive)
+        else:
+            self.phase_count = self.size
+            (Z_primitive, P_primitive) = self.build_primitive_matrices()
+            self.Z = Z_primitive * self.scale
+            self.Y = P_primitive * self.scale
         self.type = "Overhead"
 
 
@@ -146,13 +158,21 @@ class LineObject:
 
         # Operation: a = (1/2)ZY + u
         self.a = 0.5 * np.matmul(builder.Z, builder.Y) + u
-        
+
         # Operation: b = Z
         self.b = builder.Z
 
+        # Operation: c = Y + (1/4)YZY
+        self.c = builder.Y + (1/4)* np.matmul(np.matmul(builder.Y,builder.Z),builder.Y)
+
+        # Operation: d = a
+        self.d = self.a
+    
         # Operation: Matrix inversion A = a^(-1)
         self.A = np.linalg.inv(self.a)
 
         # Operation: B = Ab
         self.B = np.matmul(self.A, self.b)
+
+        self.line = builder
         

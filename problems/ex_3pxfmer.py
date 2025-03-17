@@ -26,9 +26,9 @@ Z_line = np.array([
 ])
 
 xfmer = Xfmer(5000000,115000, 12470)
-xfmer.add_Zpu_phasor(0.085, 85)
+xfmer.add_Zpu(1.0 + 1j * 6.0)
 xfmer.build()
-xfmer1 = DeltaWyeGrounded(xfmer)
+xfmer1 = DeltaWyeGrounded(xfmer,xfmer,xfmer)
 
 print(xfmer1.at)
 print(xfmer1.bt)
