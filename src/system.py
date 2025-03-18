@@ -20,19 +20,19 @@ class VLL_Source:
         self.V = []
         for v, angle in zip(V, LL_angles):
             if LL:
-                self.V.append(v * np.exp(1j * np.radians(angle)))
+                self.V.append(toRectangular(v, angle, False))
             else:
-                self.V.append((v * np.sqrt(3)) * np.exp(1j * np.radians(angle)))
+                self.V.append(toRectangular(v * np.sqrt(3), angle, False))
 
 class VLN_DeltaSource:
     def __init__(self, V, LN=True):
-        v_angles = [30.0, -90.0 if len(V) >= 2 else 0.0, 150.0 if len(V) == 3 else 0.0]  
+        v_angles = [0.0, -120.0 if len(V) >= 2 else 0.0, 120.0 if len(V) == 3 else 0.0]  
         self.V = []
         for v, angle in zip(V, v_angles):
             if LN:
-                self.V.append(v  * np.exp(1j * np.radians(angle)))
+                self.V.append(toRectangular(v, angle, False))
             else:
-                self.V.append((v / np.sqrt(3)) * np.exp(1j * np.radians(angle)))
+                self.V.append(toRectangular(v / np.sqrt(3), angle, False))
 
 def toPolar(V):
     magnitude = np.abs(V)

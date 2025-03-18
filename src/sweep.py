@@ -1,16 +1,13 @@
 import numpy as np
 
-def fsw_vol(at, bt, V, I):
+def sweep_vol(at, bt, V, I):
     V_f = np.zeros((3,3), dtype=complex)
-    V_f= np.matmul(at,V) + np.matmul(bt,I)
+    V_f= np.matmul(at,V) - np.matmul(bt,I)
     return V_f
 
-def bksw_vol(At, Bt, V, I):
-    V_b = np.zeros((3,3), dtype=complex)
-    V_b = np.matmul(At,V) + np.matmul(Bt,I)
-    return V_b
 
-__all__ = ['fsw_vol', 'bksw_vol']
+
+__all__ = ['sweep_vol']
 
 '''
 class PowerSystem:

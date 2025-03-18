@@ -21,7 +21,7 @@ Sc = 1230 kVA at 0.95 lagging
 from src.line import *
 from src.xfmer import *
 from src.system import *
-from src.sweep import fsw_vol, bksw_vol  
+from src.sweep import *
 import numpy as np
 #2000/2500 ft line, 5280 ft per mile
 scale1 = 2000/5280
@@ -35,9 +35,10 @@ line_builder1.add_conductor(0.278, 0.0244, 7.0, 29.0, 0.721)  # Phase C
 line_builder1.add_scale(scale1)
 line_builder1.build(False)
 
+#No Shunt Admittance
 line_builder1.Y = np.zeros((3,3), dtype=complex)
 Line1 = LineObject(line_builder1)
-print("Line1 Impedance\n {}".format(Line1.line.Z))
+
 
 
 
@@ -50,9 +51,9 @@ line_builder2.add_conductor(0.445, 0.0081, 4.0, 25.0, 0.563)  # Neutral
 line_builder2.add_scale(scale2)
 line_builder2.build(True)
 
+#No Shunt Admittance
 line_builder2.Y = np.zeros((3,3), dtype=complex)
 Line2 = LineObject(line_builder2)
-print("Line2 Impedance\n {}".format(Line2.line.Z))
 
 #Xfmer
 # def __init__(self, rated_power, primary_voltage, secondary_voltage):
@@ -69,48 +70,41 @@ Sload = [PQLoad(750e3, None, 0.85).S, PQLoad(1000e3, None, 0.90).S, PQLoad(1250e
 
 #VLL
 V1_LL = VLL_Source([12.47e3, 12.47e3, 12.47e3])
-print(V1_LL.V)
+
 #VLN
 V1_LN = VLN_DeltaSource([12.47e3, 12.47e3, 12.47e3], False)
-print(V1_LN.V)
-Ip = np.zeros(3, dtype=complex)
-Is = np.zeros(3, dtype=complex)
-Vold = [2.4e3, 2.4e3, 2.4e3]
-V4_LN = [2.4e3, 2.4e3, 2.4e3]
-V3_LN = [7.2e3, 7.2e3, 7.2e3]
-V2_LN = [7.2e3, 7.2e3, 7.2e3]
+
+
+#Initial Conditions
+V4_LN = [1, 1, 1]
+V3_LN = [1, 1, 1]
+V2_LN = [1, 1, 1]
 tol = 1;
 max_iter = 1000;
 iter = 0;
-#def fsw_vol(at, bt, V, I):
-#def bksw_vol(At, Bt, V, I):
-
-#Need to fix the forward sweep
+V4_prev = [0, 0, 0];
+Ip = np.zeros(3, dtype=complex)
+Is = np.zeros(3, dtype=complex)
 while tol > 1e-6 and iter < max_iter:
-    V4_prev = np.copy(V4_LN)
+    #Sweep Equation
+    V2_LN = sweep_vol(Line1.A, Line1.B, V1_LN.V, Ip)
+    V3_LN = sweep_vol(xfmer1.At, xfmer1.Bt, V2_LN, Is)
+    V4_LN = sweep_vol(Line2.A, Line2.B, V3_LN, Is)
+
+    tol = np.max(np.abs(abs(max(V4_LN)) - abs(max(V4_prev)))/2.4e3)
     
-    # ---- Forward Sweep (from source to load) ----
-    V2_LN = fsw_vol(Line1.a, Line1.b, V1_LN.V, Ip)
-    V3_LN = fsw_vol(xfmer1.at, xfmer1.bt, V2_LN, Is)
-    V4_LN = fsw_vol(Line2.a, Line2.b, V3_LN, Is)
-    
-    # Check convergence
-    tol = np.max(np.abs(V4_LN - V4_prev))
-    print(f"Iteration {iter+1}: Max voltage difference = {tol:.8f}")
-    
+    #Max Iterations Break
     if iter == max_iter - 1:
-        print("Max iterations reached")
         break
     
     iter += 1
-    
+
     for i in range(3):
         Is[i] = np.conj(Sload[i] / V4_LN[i])
-    
+ 
+    V4_prev = np.copy(V4_LN)
     Ip = np.matmul(xfmer1.dt, Is)
-    
-    V3_LN = bksw_vol(Line2.A, Line2.B, V4_LN, Is)
-    V2_LN = bksw_vol(xfmer1.At, xfmer1.Bt, V3_LN, Is)
+
 if tol < 1e-6:
     print("Converged")
 else:

@@ -31,7 +31,7 @@ class DeltaWyeGrounded:
                                                  [xfmer1.Z,0.0,2.0*xfmer3.Z]])
             self.ct = np.zeros((3,3), dtype=complex)
             #Backward Sweep Factors
-            self.At = (1/xfmer1.nt) * np.array([[1.0,0.0,-1.0],[0.0,1.0,0.0],[-1.0,-1.0,1.0]])
+            self.At = (1/xfmer1.nt) * np.array([[1.0,0.0,-1.0],[0.0,1.0,-1.0],[-1.0,0.0,1.0]])
             self.dt = self.At
             self.Bt = np.zeros((3,3), dtype=complex)
             for i in range(3):
@@ -53,8 +53,8 @@ class DeltaWyeGrounded:
                                                   [2.0*xfmer1.Z,xfmer2.Z,0.0]])
             self.ct = np.zeros((3,3), dtype=complex)
             #Backward Sweep Factors
-            self.At = (1/xfmer1.nt) * np.array([[1.0,-1.0,0.0],[0.0,1.0,-1.0],[-1.0,0.0,1.0]])
-            self.dt = self.At
+            self.At = (1/xfmer1.nt) * np.array([[1.0,0.0,-1.0],[-1.0,1.0,0.0],[0.0,-1.0,1.0]])
+            self.dt = (1/xfmer1.nt) * np.array([[1.0,-1.0,0.0],[0.0,1.0,-1.0],[-1.0,0.0,1.0]])
             self.Bt = np.zeros((3,3), dtype=complex)
             for i in range(3):
                 for j in range(3):
