@@ -40,8 +40,6 @@ line_builder1.Y = np.zeros((3,3), dtype=complex)
 Line1 = LineObject(line_builder1)
 
 
-
-
 #Wye Line
 line_builder2 = OverheadLineBuilder()
 line_builder2.add_conductor(0.278, 0.0244, 0.0, 29.0, 0.721)  # Phase A
@@ -115,7 +113,41 @@ Vload =V4_LN*(120/2.4e3)
 (vol,angle) = toPolar(Vload)
 print("Voltages\n {}".format(vol))
 print("Angles\n {}".format(angle))
+'''
+To deal with this voltage, we need to install a regulator on the secondary side of the transformer.
+'''
+#The regulator is placed on 3x single phase transformers.
+#Turn ratio for 2.4kV to 120V:
+PT_ratio = 2.4e3/120
+V_nominal = 2.4e3
+S_rated_total = 2000e3 * 3 
+I_rated = S_rated_total / (V_nominal * np.sqrt(3))
+#Adjust the current to nearest 10A
+I_adjusted = np.ceil(I_rated / 10) * 10  
+print("Nominal current: {}".format(I_rated))
+print("Adjusted current: {}".format(I_adjusted))
+#Reduce current to 5A, Use CT ratio:
+I_comp = 5
+CT_ratio = I_adjusted / I_comp
 
+#Find the equivalent impedance for the compensater circuit:
+Z_eq = (V3_LN - V4_LN)/Is
+#Get the average of the three phases:
+Zavg = np.mean(Z_eq)
+#Convert to volts:
+Zvol = Zavg * (I_adjusted/PT_ratio)
+#Convert to ohms:
+Zohm = Zvol/I_comp
+#Find the input regulatored voltage
+V_in = V3_LN/PT_ratio
+(vol,angle) = toPolar(V_in)
+#Find the input regulated current:
+I_in = Is/CT_ratio
+#Voltage relay
+V_relay = V_in - Zohm*I_in
+(vol_relay,angle_relay) = toPolar(V_relay)
+print("Relay voltage: {}".format(vol_relay))
+print("Relay angle: {}".format(angle_relay))
 
 
 
