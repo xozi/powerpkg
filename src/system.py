@@ -14,7 +14,7 @@ class PVLoad:
         self.P = P
         self.V = V
         self.S = P + 1j * 0
-class VLL_Source:
+class VLL_DeltaSource:
     def __init__(self, V, LL=True):
         LL_angles = [30.0, -90.0 if len(V) >= 2 else 0.0, 150.0 if len(V) == 3 else 0.0] 
         self.V = []
@@ -24,7 +24,7 @@ class VLL_Source:
             else:
                 self.V.append(toRectangular(v * np.sqrt(3), angle, False))
 
-class VLN_DeltaSource:
+class VLN_WyeSource:
     def __init__(self, V, LN=True):
         v_angles = [0.0, -120.0 if len(V) >= 2 else 0.0, 120.0 if len(V) == 3 else 0.0]  
         self.V = []
@@ -45,4 +45,4 @@ def toRectangular(magnitude, angle, radians=False):
     else:
         return magnitude * np.exp(1j * np.radians(angle))
 
-__all__ = ['PQLoad', 'PVLoad', 'VLL_Source', 'VLN_DeltaSource', 'toPolar', 'toRectangular']
+__all__ = ['PQLoad', 'PVLoad', 'VLL_WyeSource', 'VLN_DeltaSource', 'toPolar', 'toRectangular']

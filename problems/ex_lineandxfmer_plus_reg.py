@@ -67,10 +67,10 @@ Sload = [PQLoad(750e3, None, 0.85).S, PQLoad(1000e3, None, 0.90).S, PQLoad(1250e
 
 
 #VLL
-V1_LL = VLL_Source([12.47e3, 12.47e3, 12.47e3])
+V1_LL = VLL_DeltaSource([12.47e3, 12.47e3, 12.47e3])
 
 #VLN
-V1_LN = VLN_DeltaSource([12.47e3, 12.47e3, 12.47e3], False)
+V1_LN = VLN_WyeSource([12.47e3, 12.47e3, 12.47e3], False)
 
 
 #Initial Conditions
